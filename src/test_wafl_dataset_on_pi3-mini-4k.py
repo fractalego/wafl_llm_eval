@@ -54,6 +54,19 @@ def extract_tags(prompt: str) -> list:
     return list(set(tags))
 
 
+def normalize_conversations(text):
+    text = text.replace("User:", "user:")
+    text = text.replace("Bot:", "bot:")
+    text = text.replace("\nuser:", "<|end|>\n<|user|>\n")
+    text = text.replace("\nbot:", "<|end|>\n<|assistant|>\n")
+    return text
+
+
+def normalize_prompt(text):
+    text = "<|system|>\n" + text
+    return text
+
+
 if __name__ == '__main__':
     dataset = load_dataset("fractalego/wafl-functions-dataset")
     correct_df = create_correct_dataset(dataset["test"])
@@ -66,7 +79,7 @@ if __name__ == '__main__':
         user_string = conversation.split("\nbot: ")[0]
         prompt = row["prompt"]
         tags_in_rules = extract_tags(prompt)
-        input_ids = tokenizer(prompt + user_string + "\nbot:", return_tensors="pt")
+        input_ids = tokenizer(normalize_prompt(prompt) + normalize_conversations("\n" + user_string + "\nbot:"), return_tensors="pt")
         outputs = model.generate(input_ids["input_ids"].cuda(),
                                  max_new_tokens=1024,
                                  pad_token_id=tokenizer.eos_token_id)
